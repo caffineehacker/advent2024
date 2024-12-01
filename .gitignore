@@ -7,8 +7,8 @@ target/
 **/*.rs.bk
 
 # Ignore the puzzle data since apparently we shouldn't be sharing that
-data*.txt
-test*.txt
+day*/**/data*.txt
+day*/**/test*.txt
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
