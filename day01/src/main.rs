@@ -26,6 +26,8 @@ fn main() {
 
     let result1 = part1(left.clone(), right.clone());
     println!("Part1: {}", result1);
+
+    println!("Part 2: {}", part2(left, right))
 }
 
 fn part1(mut left: Vec<i64>, mut right: Vec<i64>) -> u64 {
@@ -36,6 +38,16 @@ fn part1(mut left: Vec<i64>, mut right: Vec<i64>) -> u64 {
         .zip(right.into_iter())
         .map(|(a, b)| a.abs_diff(b))
         .sum::<u64>()
+}
+
+fn part2(left: Vec<i64>, right: Vec<i64>) -> i64 {
+    let left_counts = left.into_iter().counts();
+    let right_counts = right.into_iter().counts();
+
+    left_counts
+        .into_iter()
+        .map(|(v, c)| v * (c as i64) * (*right_counts.get(&v).unwrap_or(&0) as i64))
+        .sum::<i64>()
 }
 
 fn parse(file: &str) -> (Vec<i64>, Vec<i64>) {
@@ -67,5 +79,13 @@ mod tests {
         let (left, right) = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result1 = part1(left, right);
         assert_eq!(result1, 11);
+    }
+
+    #[test]
+    fn test_part2() {
+        let (left, right) = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
+        let result2 = part2(left, right);
+
+        assert_eq!(result2, 31);
     }
 }
