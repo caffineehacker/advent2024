@@ -31,21 +31,36 @@ fn main() {
 }
 
 fn part1(data: Vec<Vec<i64>>) -> usize {
+    data.iter().filter(|report| is_safe(report)).count()
+}
+
+fn part2(data: Vec<Vec<i64>>) -> usize {
     data.iter()
         .filter(|report| {
-            report.iter().tuple_windows().all(|(a, b)| {
-                let diff = a - b;
-                diff <= 3 && diff >= 1
-            }) || report.iter().tuple_windows().all(|(a, b)| {
-                let diff = b - a;
-                diff <= 3 && diff >= 1
-            })
+            if is_safe(report) {
+                return true;
+            } else {
+                for i in 0..report.len() {
+                    let mut fixed_report = report[0..i].to_vec();
+                    fixed_report.append(&mut report[(i + 1)..].to_vec());
+                    if is_safe(&fixed_report) {
+                        return true;
+                    }
+                }
+                return false;
+            }
         })
         .count()
 }
 
-fn part2(left: Vec<Vec<i64>>) -> i64 {
-    0
+fn is_safe(report: &Vec<i64>) -> bool {
+    report.iter().tuple_windows().all(|(a, b)| {
+        let diff = a - b;
+        diff <= 3 && diff >= 1
+    }) || report.iter().tuple_windows().all(|(a, b)| {
+        let diff = b - a;
+        diff <= 3 && diff >= 1
+    })
 }
 
 fn parse(file: &str) -> Vec<Vec<i64>> {
@@ -82,6 +97,6 @@ mod tests {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 4);
     }
 }
