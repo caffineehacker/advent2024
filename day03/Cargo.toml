@@ -1,5 +1,5 @@
 [package]
-name = "day03"
+name = "daytodo"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +7,4 @@ edition = "2021"
 clap = { version = "*", features = ["derive"] }
 indicatif = "*"
 itertools = "*"
+regex = "*"
