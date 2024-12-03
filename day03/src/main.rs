@@ -47,7 +47,28 @@ fn part1(data: Vec<char>) -> i64 {
 }
 
 fn part2(data: Vec<char>) -> i64 {
-    0
+    let re = Regex::new(r"(do\(\))|(don\'t\(\))|(mul\((\d\d?\d?),(\d\d?\d?)\))").unwrap();
+    let mut sum = 0;
+    let mut enabled = true;
+    for c in re.captures_iter(&data.into_iter().join("")) {
+        match c.get(0).unwrap().as_str() {
+            "do()" => {
+                enabled = true;
+            }
+            "don't()" => {
+                enabled = false;
+            }
+            _ => {
+                if enabled {
+                    let num1 = c.get(4).unwrap().as_str().parse::<i64>().unwrap();
+                    let num2 = c.get(5).unwrap().as_str().parse::<i64>().unwrap();
+                    sum += num1 * num2;
+                }
+            }
+        }
+    }
+
+    sum
 }
 
 fn parse(file: &str) -> Vec<char> {
@@ -73,9 +94,9 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
+        let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test2.txt"));
         let result2 = part2(data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 48);
     }
 }
