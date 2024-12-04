@@ -150,13 +150,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "daytodo"
+name = "day03"
 version = "0.1.0"
 dependencies = [
  "clap",
  "indicatif",
  "itertools",
  "regex",
+]
+
+[[package]]
+name = "day04"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "indicatif",
+ "itertools",
 ]
 
 [[package]]

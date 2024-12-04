@@ -38,7 +38,7 @@ fn part2(data: Vec<Vec<i64>>) -> i64 {
     0
 }
 
-fn parse(file: &str) -> (Vec<Vec<i64>>) {
+fn parse(file: &str) -> Vec<Vec<i64>> {
     let file = File::open(file).expect("Failed to open file");
     let reader = BufReader::new(file);
     let lines: Vec<String> = reader
