@@ -103,7 +103,25 @@ fn count_matches(data: &Vec<Vec<char>>, i: usize, j: usize) -> i64 {
 }
 
 fn part2(data: Vec<Vec<char>>) -> i64 {
-    0
+    let mut count = 0;
+
+    for i in 1..(data.len() - 1) {
+        for j in 1..(data[i].len() - 1) {
+            if data[i][j] != 'A' {
+                continue;
+            }
+
+            if ((data[i - 1][j - 1] == 'S' && data[i + 1][j + 1] == 'M')
+                || (data[i - 1][j - 1] == 'M' && data[i + 1][j + 1] == 'S'))
+                && ((data[i + 1][j - 1] == 'S' && data[i - 1][j + 1] == 'M')
+                    || (data[i + 1][j - 1] == 'M' && data[i - 1][j + 1] == 'S'))
+            {
+                count += 1;
+            }
+        }
+    }
+
+    count
 }
 
 fn parse(file: &str) -> Vec<Vec<char>> {
@@ -137,6 +155,6 @@ mod tests {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 9);
     }
 }
