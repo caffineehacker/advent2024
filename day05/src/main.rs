@@ -52,6 +52,10 @@ fn is_valid_print(pages: &Vec<i64>, rules: &Vec<(i64, i64)>) -> bool {
         .filter(|(from, to)| page_numbers.contains(from) && page_numbers.contains(to))
         .collect_vec();
 
+    is_valid_print_with_rules(pages, &relevant_rules)
+}
+
+fn is_valid_print_with_rules(pages: &Vec<i64>, relevant_rules: &Vec<&(i64, i64)>) -> bool {
     relevant_rules.iter().all(|(first, second)| {
         pages
             .iter()
@@ -68,8 +72,54 @@ fn is_valid_print(pages: &Vec<i64>, rules: &Vec<(i64, i64)>) -> bool {
     })
 }
 
+fn correctly_order(mut pages: Vec<i64>, rules: &Vec<(i64, i64)>) -> Option<Vec<i64>> {
+    let page_numbers: HashSet<i64> = HashSet::from_iter(pages.iter().cloned());
+    let relevant_rules = rules
+        .iter()
+        .filter(|(from, to)| page_numbers.contains(from) && page_numbers.contains(to))
+        .collect_vec();
+
+    if is_valid_print_with_rules(&pages, &relevant_rules) {
+        return None;
+    }
+
+    while relevant_rules.iter().any(|(first, second)| {
+        let from = pages
+            .iter()
+            .enumerate()
+            .find(|(_, p)| **p == *first)
+            .unwrap()
+            .0;
+        let to = pages
+            .iter()
+            .enumerate()
+            .find(|(_, p)| **p == *second)
+            .unwrap()
+            .0;
+        if from > to {
+            pages.swap(from, to);
+            return true;
+        }
+
+        false
+    }) {}
+
+    Some(
+        pages
+            .iter()
+            .cloned()
+            .permutations(pages.len())
+            .find(|p| is_valid_print_with_rules(p, &relevant_rules))
+            .unwrap(),
+    )
+}
+
 fn part2(data: Data) -> i64 {
-    0
+    data.prints
+        .into_iter()
+        .filter_map(|pages| correctly_order(pages, &data.rules))
+        .map(|pages| pages.get(pages.len() / 2).unwrap().clone())
+        .sum::<i64>()
 }
 
 fn parse(file: &str) -> Data {
@@ -117,6 +167,6 @@ mod tests {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 123);
     }
 }
