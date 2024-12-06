@@ -3,6 +3,7 @@ use itertools::Itertools;
 use std::{
     collections::HashSet,
     fs::File,
+    hash::{Hash, Hasher},
     io::{BufRead, BufReader},
 };
 
@@ -38,13 +39,13 @@ fn main() {
 
     let data = parse(&data_file);
 
-    let result1 = part1(data.clone());
-    println!("Part1: {}", result1);
+    let result1 = part1(&data, None);
+    println!("Part1: {}", result1.unwrap().len());
 
     println!("Part 2: {}", part2(data))
 }
 
-fn part1(data: Data) -> i64 {
+fn part1(data: &Data, new_stone: Option<Position>) -> Option<Vec<Position>> {
     let mut guard_pos = data.guard;
     let mut guard_velocity = Position { x: 0, y: -1 };
     let mut visited = HashSet::new();
@@ -54,33 +55,55 @@ fn part1(data: Data) -> i64 {
         && guard_pos.x >= 0
         && guard_pos.x <= data.max_position.x
     {
-        visited.insert(guard_pos);
+        if !visited.insert((guard_pos, guard_velocity)) {
+            // Loop found
+            return None;
+        }
+
         let mut new_guard_velocity = guard_velocity;
 
         let mut new_guard_position = Position {
             x: guard_pos.x + new_guard_velocity.x,
             y: guard_pos.y + new_guard_velocity.y,
         };
-        if data.stones.contains(&new_guard_position) {
+        if data.stones.contains(&new_guard_position)
+            || (new_stone.is_some() && new_guard_position == new_stone.unwrap())
+        {
             new_guard_velocity = Position {
                 x: -guard_velocity.y,
                 y: guard_velocity.x,
             };
-            new_guard_position = Position {
-                x: guard_pos.x + new_guard_velocity.x,
-                y: guard_pos.y + new_guard_velocity.y,
-            };
+            new_guard_position = guard_pos;
         }
 
         guard_velocity = new_guard_velocity;
         guard_pos = new_guard_position;
     }
 
-    visited.len() as i64
+    Some(
+        visited
+            .iter()
+            .map(|(pos, _)| pos.clone())
+            .unique()
+            .collect_vec(),
+    )
 }
 
 fn part2(data: Data) -> i64 {
-    0
+    let possible_new_stones: HashSet<Position> =
+        HashSet::from_iter(part1(&data, None).unwrap().into_iter());
+
+    possible_new_stones
+        .into_iter()
+        .filter(|new_stone| *new_stone != data.guard)
+        .filter(|new_stone| {
+            if part1(&data, Some(new_stone.clone())).is_none() {
+                true
+            } else {
+                false
+            }
+        })
+        .count() as i64
 }
 
 fn parse(file: &str) -> Data {
@@ -138,9 +161,9 @@ mod tests {
     #[test]
     fn test_part1() {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
-        let result1 = part1(data);
+        let result1 = part1(&data, None);
 
-        assert_eq!(result1, 41);
+        assert_eq!(result1.unwrap().len(), 41);
     }
 
     #[test]
@@ -148,6 +171,14 @@ mod tests {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 6);
+    }
+
+    #[test]
+    fn test_part2_1() {
+        let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test2.txt"));
+        let result2 = part2(data);
+
+        assert_eq!(result2, 1);
     }
 }
