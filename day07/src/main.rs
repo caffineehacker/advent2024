@@ -27,7 +27,7 @@ fn main() {
     let result1 = part1(&data);
     println!("Part1: {}", result1);
 
-    println!("Part 2: {}", part2(data))
+    println!("Part 2: {}", part2(&data))
 }
 
 struct Input {
@@ -36,9 +36,13 @@ struct Input {
 }
 
 fn part1(data: &Vec<Input>) -> u64 {
+    solve(data, false)
+}
+
+fn solve(data: &Vec<Input>, include_concat: bool) -> u64 {
     data.iter()
         .filter_map(|row| {
-            if is_possible(row.result, row.values[0], &row.values[1..]) {
+            if is_possible(row.result, row.values[0], &row.values[1..], include_concat) {
                 Some(row.result)
             } else {
                 None
@@ -47,7 +51,7 @@ fn part1(data: &Vec<Input>) -> u64 {
         .sum::<u64>()
 }
 
-fn is_possible(target: u64, value: u64, remaining: &[u64]) -> bool {
+fn is_possible(target: u64, value: u64, remaining: &[u64], include_concat: bool) -> bool {
     if remaining.len() == 0 {
         return value == target;
     }
@@ -56,12 +60,29 @@ fn is_possible(target: u64, value: u64, remaining: &[u64]) -> bool {
         return false;
     }
 
-    return is_possible(target, value + remaining[0], &remaining[1..])
-        || is_possible(target, value * remaining[0], &remaining[1..]);
+    return is_possible(
+        target,
+        value + remaining[0],
+        &remaining[1..],
+        include_concat,
+    ) || is_possible(
+        target,
+        value * remaining[0],
+        &remaining[1..],
+        include_concat,
+    ) || (include_concat
+        && is_possible(
+            target,
+            (value.to_string() + &remaining[0].to_string())
+                .parse::<u64>()
+                .unwrap(),
+            &remaining[1..],
+            include_concat,
+        ));
 }
 
-fn part2(data: Vec<Input>) -> i64 {
-    0
+fn part2(data: &Vec<Input>) -> u64 {
+    solve(data, true)
 }
 
 fn parse(file: &str) -> Vec<Input> {
@@ -104,8 +125,8 @@ mod tests {
     #[test]
     fn test_part2() {
         let data = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
-        let result2 = part2(data);
+        let result2 = part2(&data);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 11387);
     }
 }
