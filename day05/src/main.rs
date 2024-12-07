@@ -1,7 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };

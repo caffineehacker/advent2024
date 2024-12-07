@@ -3,7 +3,7 @@ use itertools::Itertools;
 use std::{
     collections::HashSet,
     fs::File,
-    hash::{Hash, Hasher},
+    hash::Hash,
     io::{BufRead, BufReader},
 };
 
