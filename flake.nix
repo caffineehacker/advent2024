@@ -27,6 +27,7 @@
             })
             clippy
             vscodium
+            aoc-cli
           ];
 
           nativeBuildInputs = [
