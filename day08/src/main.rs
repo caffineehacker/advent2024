@@ -47,43 +47,67 @@ fn part1(input: &Input) -> i64 {
     input
         .antennas
         .iter()
-        .map(|(_, positions)| find_antinodes(positions, &input.map_limits))
+        .map(|(_, positions)| find_antinodes(positions, &input.map_limits, false))
         .reduce(|acc, pos| acc.union(&pos).cloned().collect())
         .unwrap()
         .len() as i64
 }
 
-fn find_antinodes(positions: &Vec<Position>, map_limits: &Position) -> HashSet<Position> {
+fn find_antinodes(
+    positions: &Vec<Position>,
+    map_limits: &Position,
+    include_harmonics: bool,
+) -> HashSet<Position> {
     let mut antinode_positions = HashSet::new();
     for i in 0..(positions.len() - 1) {
         for j in (i + 1)..positions.len() {
             let diff_x = positions[i].x - positions[j].x;
             let diff_y = positions[i].y - positions[j].y;
 
-            let antinode1 = Position {
-                x: positions[i].x + diff_x,
-                y: positions[i].y + diff_y,
-            };
+            if include_harmonics {
+                let mut pos = positions[i];
+                while pos.x >= 0 && pos.x < map_limits.x && pos.y >= 0 && pos.y < map_limits.y {
+                    antinode_positions.insert(pos);
+                    pos = Position {
+                        x: pos.x + diff_x,
+                        y: pos.y + diff_y,
+                    };
+                }
 
-            let antinode2 = Position {
-                x: positions[j].x - diff_x,
-                y: positions[j].y - diff_y,
-            };
+                pos = positions[j];
+                while pos.x >= 0 && pos.x < map_limits.x && pos.y >= 0 && pos.y < map_limits.y {
+                    antinode_positions.insert(pos);
+                    pos = Position {
+                        x: pos.x - diff_x,
+                        y: pos.y - diff_y,
+                    };
+                }
+            } else {
+                let antinode1 = Position {
+                    x: positions[i].x + diff_x,
+                    y: positions[i].y + diff_y,
+                };
 
-            if antinode1.x >= 0
-                && antinode1.x < map_limits.x
-                && antinode1.y >= 0
-                && antinode1.y < map_limits.y
-            {
-                antinode_positions.insert(antinode1);
-            }
+                if antinode1.x >= 0
+                    && antinode1.x < map_limits.x
+                    && antinode1.y >= 0
+                    && antinode1.y < map_limits.y
+                {
+                    antinode_positions.insert(antinode1);
+                }
 
-            if antinode2.x >= 0
-                && antinode2.x < map_limits.x
-                && antinode2.y >= 0
-                && antinode2.y < map_limits.y
-            {
-                antinode_positions.insert(antinode2);
+                let antinode2 = Position {
+                    x: positions[j].x - diff_x,
+                    y: positions[j].y - diff_y,
+                };
+
+                if antinode2.x >= 0
+                    && antinode2.x < map_limits.x
+                    && antinode2.y >= 0
+                    && antinode2.y < map_limits.y
+                {
+                    antinode_positions.insert(antinode2);
+                }
             }
         }
     }
@@ -92,7 +116,13 @@ fn find_antinodes(positions: &Vec<Position>, map_limits: &Position) -> HashSet<P
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    input
+        .antennas
+        .iter()
+        .map(|(_, positions)| find_antinodes(positions, &input.map_limits, true))
+        .reduce(|acc, pos| acc.union(&pos).cloned().collect())
+        .unwrap()
+        .len() as i64
 }
 
 fn parse(file: &str) -> Input {
@@ -134,30 +164,6 @@ fn parse(file: &str) -> Input {
             .collect(),
         map_limits,
     }
-
-    /*
-     * Alternative implementations:
-     */
-
-    // Two sections separated by a newline
-    // Input {
-    //     first: lines
-    //         .iter()
-    //         .take_while(|line| !line.is_empty())
-    //         .map(|line| line.split_once('|').unwrap())
-    //         .map(|(a, b)| (a.parse::<i64>().unwrap(), b.parse::<i64>().unwrap()))
-    //         .collect_vec(),
-    //     second: lines
-    //         .iter()
-    //         .skip_while(|line| !line.is_empty())
-    //         .filter(|line| !line.is_empty())
-    //         .map(|line| {
-    //             line.split(',')
-    //                 .map(|page| page.parse::<i64>().unwrap())
-    //                 .collect_vec()
-    //         })
-    //         .collect_vec(),
-    // }
 }
 
 #[cfg(test)]
@@ -177,6 +183,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 34);
     }
 }
