@@ -14,9 +14,15 @@ struct Args {
     debug: bool,
 }
 
-#[derive(Debug, Clone)]
+// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+// struct Position {
+//     x: i64,
+//     y: i64,
+// }
+
+#[derive(Debug, Clone, Hash)]
 struct Input {
-    values: Vec<i64>,
+    values: Vec<Vec<i64>>,
 }
 
 fn main() {
@@ -84,6 +90,39 @@ fn parse(file: &str) -> Input {
     //                 .collect_vec()
     //         })
     //         .collect_vec(),
+    // }
+
+    // Creates a HashMap<char, Vec<Position>>
+    // let map_limits = Position {
+    //     x: lines[0].len() as i64,
+    //     y: lines.len() as i64,
+    // };
+
+    // Input {
+    //     antennas: lines
+    //         .into_iter()
+    //         .enumerate()
+    //         .flat_map(|(y, line)| {
+    //             line.chars()
+    //                 .enumerate()
+    //                 .filter(|(_, c)| *c != '.')
+    //                 .map(|(x, c)| {
+    //                     (
+    //                         c,
+    //                         Position {
+    //                             x: x as i64,
+    //                             y: y as i64,
+    //                         },
+    //                     )
+    //                 })
+    //                 .collect_vec()
+    //         })
+    //         .sorted_by(|(a, _), (b, _)| Ord::cmp(a, b))
+    //         .chunk_by(|(c, _)| *c)
+    //         .into_iter()
+    //         .map(|(c, positions)| (c, positions.map(|(_, p)| p).collect_vec()))
+    //         .collect(),
+    //     map_limits,
     // }
 }
 
