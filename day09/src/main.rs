@@ -1,6 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -160,7 +161,83 @@ fn part1(input: &Input, debug: bool) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    // Start with a sparse set of files and free space. Move from the last file block to each free space and calculate the final checksum
+    let mut current_block = 0;
+    let mut checksum = 0;
+
+    let mut free_blocks = Vec::new();
+
+    for i in 0..input.blocks.len() {
+        if i % 2 == 0 {
+            current_block += input.blocks[i];
+            continue;
+        }
+
+        if input.blocks[i] == 0 {
+            continue;
+        }
+
+        println!("Free block at {} with {}", current_block, input.blocks[i]);
+
+        free_blocks.push((current_block, input.blocks[i]));
+        current_block += input.blocks[i];
+    }
+
+    let mut occupied_blocks = Vec::new();
+
+    current_block = 0;
+    for i in 0..input.blocks.len() {
+        if i % 2 == 1 {
+            current_block += input.blocks[i];
+            continue;
+        }
+
+        occupied_blocks.push((current_block, input.blocks[i]));
+        current_block += input.blocks[i];
+    }
+
+    let mut tail = occupied_blocks.len() - 1;
+    while tail > 0 {
+        let result = free_blocks
+            .iter()
+            .find_position(|fb| fb.1 >= occupied_blocks[tail].1 && fb.0 < occupied_blocks[tail].0);
+
+        match result {
+            Some(result) => {
+                let (index, (block, length)) = result;
+
+                println!("Moving {} to {}", tail, block);
+
+                checksum += (*block..(*block + occupied_blocks[tail].1))
+                    .map(|index| index * tail as i64)
+                    .sum::<i64>();
+
+                if *length == occupied_blocks[tail].1 {
+                    println!("Deleting free block at {}", block);
+                    free_blocks.remove(index);
+                } else {
+                    free_blocks[index].1 -= occupied_blocks[tail].1;
+                    free_blocks[index].0 += occupied_blocks[tail].1;
+
+                    println!(
+                        "Moved free block to {} with {}",
+                        free_blocks[index].0, free_blocks[index].1
+                    );
+                }
+            }
+            None => {
+                println!("Not moving {}", tail);
+                checksum += (occupied_blocks[tail].0
+                    ..(occupied_blocks[tail].0 + occupied_blocks[tail].1))
+                    .map(|index| index * tail as i64)
+                    .sum::<i64>();
+            }
+        };
+
+        tail -= 1;
+    }
+
+    checksum
 }
 
 fn parse(file: &str) -> Input {
@@ -206,6 +283,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 2858);
     }
 }
