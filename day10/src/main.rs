@@ -138,7 +138,106 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let trailheads = input
+        .elevations
+        .iter()
+        .filter(|(_, e)| **e == 0)
+        .map(|(p, _)| p)
+        .collect_vec();
+
+    trailheads
+        .iter()
+        .map(|start| {
+            let mut paths = VecDeque::new();
+            paths.push_back(vec![**start]);
+            let mut routes = HashSet::new();
+
+            while !paths.is_empty() {
+                let next = paths.pop_front().unwrap();
+                let current = next.get(next.len() - 1).unwrap();
+                let elevation = input.elevations.get(current).unwrap();
+
+                if *elevation == 9 {
+                    routes.insert(next);
+                    continue;
+                }
+
+                if current.x > 0
+                    && *input
+                        .elevations
+                        .get(&Position {
+                            x: current.x - 1,
+                            y: current.y,
+                        })
+                        .unwrap()
+                        == *elevation + 1
+                {
+                    let mut new_path = next.clone();
+                    new_path.push(Position {
+                        x: current.x - 1,
+                        y: current.y,
+                    });
+                    paths.push_back(new_path);
+                }
+
+                if current.y > 0
+                    && *input
+                        .elevations
+                        .get(&Position {
+                            x: current.x,
+                            y: current.y - 1,
+                        })
+                        .unwrap()
+                        == *elevation + 1
+                {
+                    let mut new_path = next.clone();
+                    new_path.push(Position {
+                        x: current.x,
+                        y: current.y - 1,
+                    });
+                    paths.push_back(new_path);
+                }
+
+                if current.x < input.map_limits.x - 1
+                    && *input
+                        .elevations
+                        .get(&Position {
+                            x: current.x + 1,
+                            y: current.y,
+                        })
+                        .unwrap()
+                        == *elevation + 1
+                {
+                    let mut new_path = next.clone();
+                    new_path.push(Position {
+                        x: current.x + 1,
+                        y: current.y,
+                    });
+                    paths.push_back(new_path);
+                }
+
+                if current.y < input.map_limits.y - 1
+                    && *input
+                        .elevations
+                        .get(&Position {
+                            x: current.x,
+                            y: current.y + 1,
+                        })
+                        .unwrap()
+                        == *elevation + 1
+                {
+                    let mut new_path = next.clone();
+                    new_path.push(Position {
+                        x: current.x,
+                        y: current.y + 1,
+                    });
+                    paths.push_back(new_path);
+                }
+            }
+
+            routes.len() as i64
+        })
+        .sum::<i64>()
 }
 
 fn parse(file: &str) -> Input {
@@ -196,6 +295,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 81);
     }
 }
