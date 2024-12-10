@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DAY_OF_MONTH=$(printf "%02d" $((`date +%d` + 1)))
+DAY_OF_MONTH=`date -d tomorrow +%d`
 DAY="day$DAY_OF_MONTH"
 cp -R template $DAY
 cd $DAY
