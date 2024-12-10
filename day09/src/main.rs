@@ -1,7 +1,6 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
-    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };
