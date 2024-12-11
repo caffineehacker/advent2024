@@ -1,6 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
+    collections::HashMap,
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -13,12 +14,6 @@ struct Args {
     #[arg(long)]
     debug: bool,
 }
-
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-// struct Position {
-//     x: i64,
-//     y: i64,
-// }
 
 #[derive(Debug, Clone, Hash)]
 struct Input {
@@ -44,38 +39,82 @@ fn main() {
 fn part1(input: &Input) -> i64 {
     let mut stones = input.values.clone();
 
-    for _ in 0..25 {
-        let mut i = 0;
-        while i < stones.len() {
-            let value = stones[i];
-            if value == 0 {
-                stones[i] = 1;
-                i += 1;
-                continue;
-            }
+    for iteration in 0..25 {
+        run_iteration(&mut stones);
 
-            let value_str = value.to_string();
-            if value.to_string().len() % 2 == 0 {
-                stones[i] = value_str[0..(value_str.len() / 2)].parse::<i64>().unwrap();
-                stones.insert(
-                    i + 1,
-                    value_str[(value_str.len() / 2)..].parse::<i64>().unwrap(),
-                );
-                i += 1;
-            } else {
-                stones[i] = value * 2024;
-            }
-            i += 1;
-        }
-
-        println!("{:?} - {}", stones, stones.len());
+        println!("{}: {}", iteration, stones.len());
     }
 
     stones.len() as i64
 }
 
-fn part2(input: &Input) -> i64 {
-    0
+fn run_iteration(stones: &mut Vec<i64>) {
+    let mut i = 0;
+    while i < stones.len() {
+        let value = stones[i];
+        if value == 0 {
+            stones[i] = 1;
+            i += 1;
+            continue;
+        }
+
+        let value_str = value.to_string();
+        if value.to_string().len() % 2 == 0 {
+            stones[i] = value_str[0..(value_str.len() / 2)].parse::<i64>().unwrap();
+            stones.insert(
+                i + 1,
+                value_str[(value_str.len() / 2)..].parse::<i64>().unwrap(),
+            );
+            i += 1;
+        } else {
+            stones[i] = value * 2024;
+        }
+        i += 1;
+    }
+}
+
+fn run_iteration_recursive(
+    stone: i64,
+    iterations: i64,
+    known_results: &mut HashMap<(i64, i64), i64>,
+) -> i64 {
+    if iterations == 0 {
+        return 1;
+    }
+
+    if let Some(result) = known_results.get(&(stone, iterations)) {
+        return *result;
+    }
+
+    let mut result = 0;
+
+    if stone == 0 {
+        result = run_iteration_recursive(1, iterations - 1, known_results);
+    } else {
+        let value_str = stone.to_string();
+        if value_str.len() % 2 == 0 {
+            let left_stone = value_str[0..(value_str.len() / 2)].parse::<i64>().unwrap();
+            let right_stone = value_str[(value_str.len() / 2)..].parse::<i64>().unwrap();
+            result += run_iteration_recursive(left_stone, iterations - 1, known_results);
+            result += run_iteration_recursive(right_stone, iterations - 1, known_results);
+        } else {
+            result = run_iteration_recursive(stone * 2024, iterations - 1, known_results);
+        }
+    }
+
+    println!("{}, {} = {}", stone, iterations, result);
+
+    known_results.insert((stone, iterations), result);
+    result
+}
+
+fn part2(input: &Input) -> u128 {
+    let mut cache = HashMap::new();
+    input
+        .values
+        .iter()
+        .map(|s| run_iteration_recursive(*s, 75, &mut cache))
+        .sum::<i64>() as u128
 }
 
 fn parse(file: &str) -> Input {
@@ -94,63 +133,6 @@ fn parse(file: &str) -> Input {
             .map(|v| v.parse::<i64>().unwrap())
             .collect_vec(),
     }
-
-    /*
-     * Alternative implementations:
-     */
-
-    // Two sections separated by a newline
-    // Input {
-    //     first: lines
-    //         .iter()
-    //         .take_while(|line| !line.is_empty())
-    //         .map(|line| line.split_once('|').unwrap())
-    //         .map(|(a, b)| (a.parse::<i64>().unwrap(), b.parse::<i64>().unwrap()))
-    //         .collect_vec(),
-    //     second: lines
-    //         .iter()
-    //         .skip_while(|line| !line.is_empty())
-    //         .filter(|line| !line.is_empty())
-    //         .map(|line| {
-    //             line.split(',')
-    //                 .map(|page| page.parse::<i64>().unwrap())
-    //                 .collect_vec()
-    //         })
-    //         .collect_vec(),
-    // }
-
-    // Creates a HashMap<char, Vec<Position>>
-    // let map_limits = Position {
-    //     x: lines[0].len() as i64,
-    //     y: lines.len() as i64,
-    // };
-
-    // Input {
-    //     antennas: lines
-    //         .into_iter()
-    //         .enumerate()
-    //         .flat_map(|(y, line)| {
-    //             line.chars()
-    //                 .enumerate()
-    //                 .filter(|(_, c)| *c != '.')
-    //                 .map(|(x, c)| {
-    //                     (
-    //                         c,
-    //                         Position {
-    //                             x: x as i64,
-    //                             y: y as i64,
-    //                         },
-    //                     )
-    //                 })
-    //                 .collect_vec()
-    //         })
-    //         .sorted_by(|(a, _), (b, _)| Ord::cmp(a, b))
-    //         .chunk_by(|(c, _)| *c)
-    //         .into_iter()
-    //         .map(|(c, positions)| (c, positions.map(|(_, p)| p).collect_vec()))
-    //         .collect(),
-    //     map_limits,
-    // }
 }
 
 #[cfg(test)]
@@ -170,6 +152,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 65601038650482);
     }
 }
