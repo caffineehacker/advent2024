@@ -153,7 +153,184 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let mut to_evaluate = input
+        .plots
+        .iter()
+        .map(|(position, _)| *position)
+        .collect::<HashSet<Position>>();
+
+    let mut result = 0;
+
+    while !to_evaluate.is_empty() {
+        let start_position = *to_evaluate.iter().next().unwrap();
+        let plot_type = *input.plots.get(&start_position).unwrap();
+
+        // Records top side of a cell
+        let mut horizontal_sides = HashSet::new();
+        // Records left side of a cell
+        let mut vertical_sides = HashSet::new();
+        let mut area = 0;
+
+        let mut to_see = VecDeque::new();
+        to_see.push_back(start_position);
+
+        while !to_see.is_empty() {
+            let position = to_see.pop_front().unwrap();
+            if !to_evaluate.remove(&position) {
+                continue;
+            }
+            area += 1;
+
+            if position.x == 0 {
+                vertical_sides.insert(position);
+            } else if *input
+                .plots
+                .get(&Position {
+                    x: position.x - 1,
+                    y: position.y,
+                })
+                .unwrap()
+                != plot_type
+            {
+                vertical_sides.insert(position);
+            } else {
+                to_see.push_back(Position {
+                    x: position.x - 1,
+                    y: position.y,
+                });
+            }
+
+            if position.x == input.map_limits.x - 1 {
+                vertical_sides.insert(Position {
+                    x: position.x + 1,
+                    y: position.y,
+                });
+            } else if *input
+                .plots
+                .get(&Position {
+                    x: position.x + 1,
+                    y: position.y,
+                })
+                .unwrap()
+                != plot_type
+            {
+                vertical_sides.insert(Position {
+                    x: position.x + 1,
+                    y: position.y,
+                });
+            } else {
+                to_see.push_back(Position {
+                    x: position.x + 1,
+                    y: position.y,
+                });
+            }
+
+            if position.y == 0 {
+                horizontal_sides.insert(position);
+            } else if *input
+                .plots
+                .get(&Position {
+                    x: position.x,
+                    y: position.y - 1,
+                })
+                .unwrap()
+                != plot_type
+            {
+                horizontal_sides.insert(position);
+            } else {
+                to_see.push_back(Position {
+                    x: position.x,
+                    y: position.y - 1,
+                });
+            }
+
+            if position.y == input.map_limits.y - 1 {
+                horizontal_sides.insert(Position {
+                    x: position.x,
+                    y: position.y + 1,
+                });
+            } else if *input
+                .plots
+                .get(&Position {
+                    x: position.x,
+                    y: position.y + 1,
+                })
+                .unwrap()
+                != plot_type
+            {
+                horizontal_sides.insert(Position {
+                    x: position.x,
+                    y: position.y + 1,
+                });
+            } else {
+                to_see.push_back(Position {
+                    x: position.x,
+                    y: position.y + 1,
+                });
+            }
+        }
+
+        let mut sides = horizontal_sides
+            .iter()
+            .sorted_by_key(|p| p.y)
+            .chunk_by(|p| p.y)
+            .into_iter()
+            .map(|(y, sides)| {
+                sides
+                    .map(|p| p.x)
+                    .sorted()
+                    .fold((0, None), |(count, last_x), x| {
+                        (
+                            if last_x == None
+                                || last_x.unwrap() != x - 1
+                                || vertical_sides.contains(&Position { x: x, y: y })
+                                || vertical_sides.contains(&Position { x: x, y: y - 1 })
+                            {
+                                count + 1
+                            } else {
+                                count
+                            },
+                            Some(x),
+                        )
+                    })
+                    .0
+            })
+            .sum::<i64>();
+        sides += vertical_sides
+            .iter()
+            .sorted_by_key(|p| p.x)
+            .chunk_by(|p| p.x)
+            .into_iter()
+            .map(|(x, sides)| {
+                sides
+                    .map(|p| p.y)
+                    .sorted()
+                    .fold((0, None), |(count, last_y), y| {
+                        (
+                            if last_y == None
+                                || last_y.unwrap() != y - 1
+                                || horizontal_sides.contains(&Position { x: x, y: y })
+                                || horizontal_sides.contains(&Position { x: x - 1, y: y })
+                            {
+                                count + 1
+                            } else {
+                                count
+                            },
+                            Some(y),
+                        )
+                    })
+                    .0
+            })
+            .sum::<i64>();
+        let price = sides * area;
+        println!(
+            "{} - {:?}: {} * {} = {}",
+            plot_type, start_position, sides, area, price
+        );
+        result += price;
+    }
+
+    result
 }
 
 fn parse(file: &str) -> Input {
@@ -210,6 +387,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 12066);
     }
 }
