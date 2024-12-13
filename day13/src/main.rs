@@ -101,7 +101,50 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    input
+        .games
+        .iter()
+        .map(|game| {
+            // We need to be able to find ax + by = c
+            // Note that a and b are the a and b buttons for a single dimension (just x or y), c is the prize in that dimension
+
+            let config = z3::Config::new();
+            let context = z3::Context::new(&config);
+            let solver = z3::Solver::new(&context);
+            let a_press = z3::ast::Int::new_const(&context, "a_press");
+            let ref_a_press = &a_press;
+            let b_press = z3::ast::Int::new_const(&context, "b_press");
+            let ref_b_press = &b_press;
+
+            solver.assert(
+                &Int::from_i64(&context, game.button_a.x)
+                    .mul(ref_a_press)
+                    .add(&Int::from_i64(&context, game.button_b.x).mul(ref_b_press))
+                    ._eq(&Int::from_i64(&context, game.prize.x + 10000000000000)),
+            );
+            solver.assert(
+                &Int::from_i64(&context, game.button_a.y)
+                    .mul(ref_a_press)
+                    .add(&Int::from_i64(&context, game.button_b.y).mul(ref_b_press))
+                    ._eq(&Int::from_i64(&context, game.prize.y + 10000000000000)),
+            );
+
+            let result = solver.check();
+            if result != SatResult::Sat {
+                // Can't satisfy the constraints so we can't get this prize
+                return 0;
+            }
+
+            let cost = solver
+                .get_model()
+                .unwrap()
+                .eval(&a_press.mul(&Int::from_i64(&context, 3)).add(b_press), true)
+                .unwrap()
+                .as_i64()
+                .unwrap();
+            cost
+        })
+        .sum::<i64>()
 }
 
 fn parse(file: &str) -> Input {
@@ -169,8 +212,6 @@ fn parse(file: &str) -> Input {
 
         i += 4;
     }
-
-    println!("{:?}", games);
 
     Input { games }
 }
