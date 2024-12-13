@@ -19,7 +19,7 @@
       in
       with pkgs;
       {
-        devShells.default = mkShell {
+        devShells.default = mkShell rec {
           buildInputs = [
             gcc
             (rust-bin.stable.latest.default.override {
@@ -28,11 +28,15 @@
             clippy
             vscodium
             aoc-cli
+            z3
           ];
 
           nativeBuildInputs = [
+            rustPlatform.bindgenHook
             pkg-config
           ];
+
+          LD_LIBRARY_PATH = "${lib.makeLibraryPath buildInputs}";
         };
       }
     );
