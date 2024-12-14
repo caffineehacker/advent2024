@@ -75,6 +75,63 @@ fn part1(input: &Input, width: usize, height: usize) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
+    // A christmas tree with 500 pixels?
+    // Base should be 101 pixels wide?
+
+    let mut robots = input.robots.clone();
+    let mut t = 0;
+
+    // Intersting timestamps:
+    // 48
+    // 104 -- 56
+    // 149 -- 45
+    // 207 -- 58
+    // 250 -- 43
+    // 310 -- 60
+    // 351 -- 41
+    // 413 -- 62
+    // 452 -- 39
+    // 516 -- 64
+    // 553 -- 37
+
+    let mut jump1 = 45;
+    let mut jump2 = 56;
+    let mut current_jump_number = 2;
+
+    robots
+        .iter_mut()
+        .for_each(|r| r.position = simulate_robot(r, 101, 103, 48));
+    t = 48;
+
+    loop {
+        let jump_amount;
+        if current_jump_number == 1 {
+            jump_amount = jump1;
+            jump1 -= 2;
+            current_jump_number = 2;
+        } else {
+            jump_amount = jump2;
+            jump2 += 2;
+            current_jump_number = 1;
+        }
+        t += jump_amount;
+        robots
+            .iter_mut()
+            .for_each(|r| r.position = simulate_robot(r, 101, 103, jump_amount));
+
+        println!("t = {}", t);
+        for y in 0..103 {
+            for x in 0..101 {
+                if robots.iter().any(|r| r.position == Position { x, y }) {
+                    print!("X");
+                } else {
+                    print!(".");
+                }
+            }
+            println!();
+        }
+    }
+
     0
 }
 
