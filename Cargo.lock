@@ -288,6 +288,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "day14"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "indicatif",
+ "itertools",
+]
+
+[[package]]
 name = "daytodo"
 version = "0.1.0"
 dependencies = [
