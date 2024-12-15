@@ -1,7 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
-    collections::HashSet,
+    collections::{HashSet, VecDeque},
     fs::File,
     io::{BufRead, BufReader},
     ops::Add,
@@ -128,7 +128,103 @@ fn move_robot(input: &mut Input, instruction: Position) {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let instructions = input.instructions.clone();
+    let mut input = input.clone();
+    // Expand the grid
+    input.walls = input
+        .walls
+        .iter()
+        .flat_map(|p| {
+            vec![
+                Position { x: p.x * 2, y: p.y },
+                Position {
+                    x: (p.x * 2) + 1,
+                    y: p.y,
+                },
+            ]
+        })
+        .collect();
+    input.boxes = input
+        .boxes
+        .iter()
+        .map(|p| Position { x: p.x * 2, y: p.y })
+        .collect();
+    input.robot = Position {
+        x: input.robot.x * 2,
+        y: input.robot.y,
+    };
+
+    print_grid(&input);
+    for instruction in instructions {
+        // println!("Moving: {:?}", instruction);
+        move_robot2(&mut input, instruction);
+        // print_grid(&input);
+        // println!();
+    }
+
+    input.boxes.iter().map(|s| (s.y * 100) + s.x).sum::<i64>()
+}
+
+fn move_robot2(input: &mut Input, instruction: Position) {
+    let robot_destination = input.robot + instruction;
+    if input.walls.contains(&robot_destination) {
+        return;
+    }
+
+    let mut boxes_to_move = HashSet::new();
+    let mut positions_to_consider = VecDeque::new();
+    positions_to_consider.push_back(input.robot + instruction);
+
+    while positions_to_consider.len() > 0 {
+        let target_position = positions_to_consider.pop_front().unwrap();
+        if input.walls.contains(&target_position) {
+            return;
+        }
+        if instruction.y != 0 {
+            if input.boxes.contains(&target_position) {
+                boxes_to_move.insert(target_position);
+                positions_to_consider.push_back(target_position + instruction);
+                // Since the box is two wide, need to also consider the spot to the right
+                positions_to_consider
+                    .push_back(target_position + instruction + Position { x: 1, y: 0 });
+            }
+            if input
+                .boxes
+                .contains(&(target_position + Position { x: -1, y: 0 }))
+            {
+                boxes_to_move.insert(target_position + Position { x: -1, y: 0 });
+                positions_to_consider
+                    .push_back(target_position + Position { x: -1, y: 0 } + instruction);
+                // Since the box is two wide, need to also consider the spot to the right
+                positions_to_consider.push_back(target_position + instruction);
+            }
+        } else {
+            if instruction.x == 1 {
+                if input.boxes.contains(&target_position) {
+                    boxes_to_move.insert(target_position);
+                    positions_to_consider.push_back(target_position + Position { x: 2, y: 0 });
+                }
+            } else {
+                if input
+                    .boxes
+                    .contains(&(target_position + Position { x: -1, y: 0 }))
+                {
+                    boxes_to_move.insert(target_position + Position { x: -1, y: 0 });
+                    positions_to_consider.push_back(target_position + Position { x: -2, y: 0 });
+                }
+            }
+        }
+    }
+
+    for b in boxes_to_move.iter() {
+        input.boxes.remove(b);
+    }
+
+    for b in boxes_to_move {
+        input.boxes.insert(b + instruction);
+    }
+
+    input.robot = input.robot + instruction;
 }
 
 fn parse(file: &str) -> Input {
@@ -232,6 +328,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 9021);
     }
 }
