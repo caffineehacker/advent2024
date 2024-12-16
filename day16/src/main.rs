@@ -92,7 +92,82 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let mut visited_cells_and_direction_to_direction = HashMap::new();
+
+    // Holds (score, position, direction)
+    let mut to_process = BinaryHeap::new();
+    to_process.push(Reverse((0, vec![input.start], Position { x: 1, y: 0 })));
+
+    let mut best_score = None;
+
+    let mut best_seats = HashSet::new();
+
+    while let Some(entry) = to_process.pop() {
+        let Reverse((score, positions, direction)) = entry;
+        let position = positions[positions.len() - 1];
+
+        if visited_cells_and_direction_to_direction
+            .get(&(position, direction))
+            .is_some_and(|best_score_in_cell| *best_score_in_cell < score)
+        {
+            continue;
+        }
+        visited_cells_and_direction_to_direction.insert((position, direction), score);
+
+        if best_score.is_some_and(|best| score > best) {
+            continue;
+        }
+
+        if position == input.exit {
+            if best_score == None {
+                best_score = Some(score);
+            }
+
+            for pos in positions.iter() {
+                best_seats.insert(pos.clone());
+            }
+        }
+
+        if !input.walls.contains(&(position + direction)) {
+            let mut new_positions = positions.clone();
+            new_positions.push(position + direction);
+            to_process.push(Reverse((score + 1, new_positions, direction)));
+        }
+
+        if direction.x != 0 {
+            to_process.push(Reverse((
+                score + 1000,
+                positions.clone(),
+                Position { x: 0, y: 1 },
+            )));
+            to_process.push(Reverse((score + 1000, positions, Position { x: 0, y: -1 })));
+        } else {
+            to_process.push(Reverse((
+                score + 1000,
+                positions.clone(),
+                Position { x: 1, y: 0 },
+            )));
+            to_process.push(Reverse((score + 1000, positions, Position { x: -1, y: 0 })));
+        }
+    }
+
+    let max_x = input.walls.iter().max_by_key(|w| w.x).unwrap().x;
+    let max_y = input.walls.iter().max_by_key(|w| w.y).unwrap().y;
+
+    for y in 0..=max_y {
+        for x in 0..=max_x {
+            if best_seats.contains(&Position { x, y }) {
+                print!("O");
+            } else if input.walls.contains(&Position { x, y }) {
+                print!("#");
+            } else {
+                print!(".");
+            }
+        }
+        println!();
+    }
+
+    best_seats.len() as i64
 }
 
 fn parse(file: &str) -> Input {
@@ -163,6 +238,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 45);
     }
 }
