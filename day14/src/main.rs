@@ -79,7 +79,7 @@ fn part2(input: &Input) -> i64 {
     // Base should be 101 pixels wide?
 
     let mut robots = input.robots.clone();
-    let mut t = 0;
+    let mut t;
 
     // Intersting timestamps:
     // 48
@@ -131,8 +131,6 @@ fn part2(input: &Input) -> i64 {
             println!();
         }
     }
-
-    0
 }
 
 fn simulate_robot(r: &Robot, width: usize, height: usize, steps: i64) -> Position {

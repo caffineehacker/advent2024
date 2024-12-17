@@ -1,5 +1,4 @@
 use clap::Parser;
-use itertools::Itertools;
 use std::ops::{Add, Mul};
 use std::{
     fs::File,
