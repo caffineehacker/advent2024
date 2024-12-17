@@ -2,6 +2,7 @@ use clap::Parser;
 use itertools::Itertools;
 use log::trace;
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -17,16 +18,16 @@ struct Args {
 
 // #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 // struct Position {
-//     x: i64,
-//     y: i64,
+//     x: u64,
+//     y: u64,
 // }
 
 #[derive(Debug, Clone, Hash)]
 struct Input {
-    register_a: i64,
-    register_b: i64,
-    register_c: i64,
-    program: Vec<i64>,
+    register_a: u64,
+    register_b: u64,
+    register_c: u64,
+    program: Vec<u64>,
 }
 
 fn main() {
@@ -74,7 +75,7 @@ fn part1(input: &Input) -> String {
                 trace!("adv {}", operand);
                 ip += 1;
                 register_a = register_a
-                    / 2_i64.pow(
+                    / 2_u64.pow(
                         get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
                     );
             }
@@ -139,7 +140,7 @@ fn part1(input: &Input) -> String {
                 ip += 1;
                 trace!("bdv {}", operand);
                 register_b = register_a
-                    / 2_i64.pow(
+                    / 2_u64.pow(
                         get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
                     );
             }
@@ -152,7 +153,7 @@ fn part1(input: &Input) -> String {
                 ip += 1;
                 trace!("cdv {}", operand);
                 register_c = register_a
-                    / 2_i64.pow(
+                    / 2_u64.pow(
                         get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
                     );
             }
@@ -163,11 +164,220 @@ fn part1(input: &Input) -> String {
     out.iter().map(|v| v.to_string()).join(",").to_owned()
 }
 
-fn part2(input: &Input) -> i64 {
+fn part2(input: &Input) -> u64 {
+    // Pulling some logic from the part 1 trace output
+    // bst (combo 4) -> B = A % 8
+    // A = A, B = A % 8, C = 0
+    // bxl 7 -> B = (A % 8) xor 7
+    // A = A, B = (A % 8) xor 7, C = 0
+    // cdv 5 (B) -> C = A >> (A % 8) xor 7
+    // A = A, B = (A % 8) xor 7, C = A >> (A % 8) xor 7
+    // adv 3 -> A = A >> 3
+    // A = A >> 3, B = (A % 8) xor 7, C = A >> (A % 8) xor 7
+    // bxc -> B = ((A % 8) xor 7) xor (A >> (A % 8) xor 7)
+    // A = A >> 3, B = (A % 8) xor (A >> (A % 8)), C = A >> (A % 8) xor 7
+    // bxl 7 -> B = (A % 8) xor (A >> (A % 8)) xor 7
+    // A = A >> 3, B = (A % 8) xor (A >> (A % 8)) xor 7, C = A >> (A % 8) xor 7
+    // out B % 8 = ((A % 8) xor (A >> (A % 8))) % 8
+
+    // 2 = ((A % 8) xor (A >> (A % 8))) % 8
+    // A is limited to 8 bits
+    // if low 3 bits are 0 0 1, bits above 5 are 0 1 1
+
+    // test with original number:
+    // A = 52042868
+    // ((A % 8) xor (A >> (A % 8))) % 8 = 2
+    // ((52042868 % 8) xor (52042868 >> (52042868 % 8))) = 2
+    // (4 xor (52042868 >> 4)) = 2
+    // (4 xor 3252679) = 2
+
+    // Work backwards
+    // B = 6505354 = (A % 8) xor (A >> (A % 8))
+    //
+
+    let mut input = input.clone();
+    let mut possibilities = HashSet::new();
+    // for i in 0..8 {
+    //     possibilities.insert((1, i));
+    // }
+    possibilities.insert((0, 0));
+
+    while possibilities.len() > 0 {
+        let entry = *possibilities.iter().min_by_key(|(i, a)| *a).unwrap();
+        let (num_count, a) = entry;
+        possibilities.remove(&entry);
+
+        for i in 0..8 {
+            input.register_a = (a << 3) + i;
+
+            let output = run_machine(&input);
+            println!("{}: {:?}", input.register_a, output);
+            if output == input.program {
+                return input.register_a;
+            }
+            if output.len() > num_count
+                && output.iter().take(num_count + 1).cloned().eq(input
+                    .program
+                    .iter()
+                    .skip(input.program.len() - (num_count + 1))
+                    .cloned())
+            {
+                possibilities.insert((num_count + 1, input.register_a));
+                println!("#### {}: {}", num_count + 1, input.register_a);
+            }
+        }
+    }
+
+    /*
+                    Possible value: 2 - length: 0
+                    Possible value: 296 - length: 1
+                    Possible value: 923 - length: 2
+                    Possible value: 34715 - length: 3
+                    Possible value: 730011 - length: 5
+                    Possible value: 17507227 - length: 6
+                    Possible value: 23798683 - length: 7
+                    Possible value: 88810395 - length: 8
+
+                                             100101000 = 296 (1)
+                                           11100110110 = 923 (2)
+                                      1000011110011011 = 34715 (3)
+                                  10110010001110011011 = 730011 (5)
+                             1000010110010001110011011 = 17507227 (6)
+                             1011010110010001110011011 = 23798683 (7)
+                           101010010110010001110011011 = 88810395 (8)
+                        100101010010110010001110011011 = 625681307 (9)
+                 1001110000101010010110010001110011011 = 83840672667 (10)
+                11100000100101010010110010001110011011 = 241143849883 (11)
+           1100011100000100101010010110010001110011011 = 6838213616539 (13)
+    10000001100011100000100101010010110010001110011011 = 569788167037851 (15)
+                 */
+
     0
 }
 
-fn get_combo_operand_value(operand: i64, a: i64, b: i64, c: i64) -> i64 {
+fn run_machine(input: &Input) -> Vec<u64> {
+    let mut ip = 0;
+    let mut register_a = input.register_a;
+    let mut register_b = input.register_b;
+    let mut register_c = input.register_c;
+
+    let mut out = Vec::new();
+
+    while ip < input.program.len() {
+        trace!(
+            "ip: {}, a: {}, b: {}, c: {}",
+            ip,
+            register_a,
+            register_b,
+            register_c
+        );
+        let instruction = input.program[ip];
+        ip += 1;
+        match instruction {
+            0 => {
+                // adv
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand = input.program[ip];
+                trace!("adv {}", operand);
+                ip += 1;
+                register_a = register_a
+                    / 2_u64.pow(
+                        get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
+                    );
+            }
+            1 => {
+                // bxl
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand = input.program[ip];
+                trace!("bxl {}", operand);
+                ip += 1;
+                register_b = register_b ^ operand;
+            }
+            2 => {
+                // bst
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand =
+                    get_combo_operand_value(input.program[ip], register_a, register_b, register_c);
+                trace!("bst {}", operand);
+                ip += 1;
+                register_b = operand % 8;
+            }
+            3 => {
+                // jnz
+                if register_a == 0 {
+                    // TODO: Should we increase ip here?
+                    trace!("jnz");
+                    ip += 1;
+                    continue;
+                }
+
+                let operand = input.program[ip];
+                trace!("jnz {}", operand);
+                ip = operand as usize;
+            }
+            4 => {
+                // bxc
+                trace!("bxc");
+                register_b ^= register_c;
+
+                // increases ip even though nothing is used.
+                ip += 1;
+            }
+            5 => {
+                // out
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand = input.program[ip];
+                ip += 1;
+                trace!("out {}", operand);
+                let output =
+                    get_combo_operand_value(operand, register_a, register_b, register_c) % 8;
+                if out.len() >= input.program.len() {
+                    return out;
+                }
+                out.push(get_combo_operand_value(operand, register_a, register_b, register_c) % 8);
+            }
+            6 => {
+                // bdv
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand = input.program[ip];
+                ip += 1;
+                trace!("bdv {}", operand);
+                register_b = register_a
+                    / 2_u64.pow(
+                        get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
+                    );
+            }
+            7 => {
+                // cdv
+                if ip == input.program.len() {
+                    break;
+                }
+                let operand = input.program[ip];
+                ip += 1;
+                trace!("cdv {}", operand);
+                register_c = register_a
+                    / 2_u64.pow(
+                        get_combo_operand_value(operand, register_a, register_b, register_c) as u32,
+                    );
+            }
+            _ => panic!("Bad instruction"),
+        };
+    }
+
+    out
+}
+
+fn get_combo_operand_value(operand: u64, a: u64, b: u64, c: u64) -> u64 {
     match operand {
         0..=3 => operand,
         4 => a,
@@ -188,7 +398,7 @@ fn parse(file: &str) -> Input {
     let (a, b, c) = lines
         .iter()
         .take_while(|l| !l.is_empty())
-        .map(|l| l.split_once(": ").unwrap().1.parse::<i64>().unwrap())
+        .map(|l| l.split_once(": ").unwrap().1.parse::<u64>().unwrap())
         .collect_tuple()
         .unwrap();
 
@@ -206,7 +416,7 @@ fn parse(file: &str) -> Input {
             .unwrap()
             .1
             .split(',')
-            .map(|page| page.parse::<i64>().unwrap())
+            .map(|page| page.parse::<u64>().unwrap())
             .collect_vec(),
     }
 }
@@ -239,6 +449,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 117440);
     }
 }
