@@ -40,7 +40,7 @@ fn main() {
     let result1 = part1(&input, Position { x: 70, y: 70 }, 1024);
     println!("Part1: {}", result1);
 
-    println!("Part 2: {}", part2(&input))
+    println!("Part 2: {}", part2(&input, Position { x: 70, y: 70 }))
 }
 
 fn part1(input: &Input, bounds: Position, bytes_to_drop: i64) -> i64 {
@@ -103,8 +103,26 @@ fn part1(input: &Input, bounds: Position, bytes_to_drop: i64) -> i64 {
     0
 }
 
-fn part2(input: &Input) -> i64 {
-    0
+fn part2(input: &Input, bounds: Position) -> String {
+    let mut low = 0;
+    let mut high = input.bytes.len();
+    let mut guess = high / 2;
+    loop {
+        println!("Guess: {}", guess);
+        if part1(&input, bounds, guess as i64) == 0 {
+            high = guess;
+        } else {
+            low = guess;
+        }
+
+        if low == high - 1 {
+            break;
+        }
+
+        guess = (low + high) / 2;
+    }
+
+    format!("{},{}", input.bytes[guess].x, input.bytes[guess].y)
 }
 
 fn parse(file: &str) -> Input {
@@ -144,8 +162,8 @@ mod tests {
     #[test]
     fn test_part2() {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
-        let result2 = part2(&input);
+        let result2 = part2(&input, Position { x: 6, y: 6 });
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, "6,1");
     }
 }
