@@ -203,7 +203,7 @@ fn part2(input: &Input) -> u64 {
     possibilities.insert((0, 0));
 
     while possibilities.len() > 0 {
-        let entry = *possibilities.iter().min_by_key(|(i, a)| *a).unwrap();
+        let entry = *possibilities.iter().min_by_key(|(_i, a)| *a).unwrap();
         let (num_count, a) = entry;
         possibilities.remove(&entry);
 
@@ -337,8 +337,6 @@ fn run_machine(input: &Input) -> Vec<u64> {
                 let operand = input.program[ip];
                 ip += 1;
                 trace!("out {}", operand);
-                let output =
-                    get_combo_operand_value(operand, register_a, register_b, register_c) % 8;
                 if out.len() >= input.program.len() {
                     return out;
                 }
