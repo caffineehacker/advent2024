@@ -1,7 +1,8 @@
+use cached::proc_macro::cached;
 use clap::Parser;
 use itertools::Itertools;
 use std::{
-    collections::{BinaryHeap, VecDeque},
+    collections::{BinaryHeap, HashSet},
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -14,12 +15,6 @@ struct Args {
     #[arg(long)]
     debug: bool,
 }
-
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-// struct Position {
-//     x: i64,
-//     y: i64,
-// }
 
 #[derive(Debug, Clone, Hash)]
 struct Input {
@@ -44,6 +39,10 @@ fn main() {
 }
 
 fn part1(input: &Input) -> usize {
+    get_possible_patterns(input).len()
+}
+
+fn get_possible_patterns(input: &Input) -> Vec<Vec<char>> {
     input
         .target_towels
         .iter()
@@ -72,11 +71,54 @@ fn part1(input: &Input) -> usize {
 
             false
         })
-        .count()
+        .cloned()
+        .collect_vec()
 }
 
-fn part2(input: &Input) -> i64 {
-    0
+fn part2(input: &Input) -> usize {
+    let source_towels = input
+        .source_towels
+        .iter()
+        .cloned()
+        .sorted()
+        .enumerate()
+        .collect_vec();
+    let max_source_length = input.source_towels.iter().map(|t| t.len()).max().unwrap();
+    println!("Max st length: {}", max_source_length);
+    // let mut source_towel_map = HashMap::new();
+    // source_towels.iter().for_each(|(index, st)| {
+    //     source_towel_map.insert(st.clone(), index.clone());
+    // });
+    let source_towels: HashSet<String> = source_towels
+        .iter()
+        .map(|st| st.1.iter().cloned().join(""))
+        .collect();
+
+    get_possible_patterns(input)
+        .iter()
+        .map(|target| possibilities(&source_towels, max_source_length, target.iter().join("")))
+        .sum()
+}
+
+#[cached(convert = r##"{ format!("{:?}", target) }"##, key = "String")]
+fn possibilities(
+    source_towels: &HashSet<String>,
+    max_source_length: usize,
+    target: String,
+) -> usize {
+    if target.len() == 0 {
+        return 1;
+    }
+
+    (1..=(max_source_length.min(target.len())))
+        .map(|i| {
+            if source_towels.contains(&target[..i]) {
+                possibilities(source_towels, max_source_length, target[i..].to_string())
+            } else {
+                0
+            }
+        })
+        .sum()
 }
 
 fn parse(file: &str) -> Input {
@@ -120,6 +162,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 16);
     }
 }
