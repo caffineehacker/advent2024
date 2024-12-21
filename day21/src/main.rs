@@ -57,6 +57,70 @@ fn main() {
     println!("Part 2: {}", part2(&input))
 }
 
+fn find_distance(
+    pads: &Vec<Vec<(char, Position)>>,
+    source: char,
+    target: char,
+    robot: usize,
+    robots: &mut Vec<HashMap<(char, char), i64>>,
+) -> i64 {
+    if robots[robot].contains_key(&(source, target)) {
+        return robots[robot][&(source, target)];
+    }
+
+    let mut to_process = BinaryHeap::new();
+    let source_pos = pads[robot].iter().find(|(c, _)| *c == source).unwrap().1;
+    let target_pos = pads[robot].iter().find(|(c, _)| *c == target).unwrap().1;
+    to_process.push(Reverse((0, source_pos, 'A')));
+
+    let mut best_so_far = None;
+
+    while !to_process.is_empty() {
+        let Reverse((dist, pos, last_press)) = to_process.pop().unwrap();
+
+        if let Some(best) = best_so_far {
+            if best < dist {
+                break;
+            }
+        }
+
+        if pos == target_pos {
+            let new_cost = dist + find_distance(pads, last_press, 'A', robot - 1, robots);
+
+            if let Some(best) = best_so_far {
+                if best < new_cost {
+                    continue;
+                }
+            }
+
+            best_so_far = Some(new_cost);
+            continue;
+        }
+
+        for dir in vec![
+            (Position { x: 1, y: 0 }, '>'),
+            (Position { x: -1, y: 0 }, '<'),
+            (Position { x: 0, y: 1 }, 'v'),
+            (Position { x: 0, y: -1 }, '^'),
+        ] {
+            let newpos = pos + dir.0;
+            if !pads[robot].iter().any(|k| k.1 == newpos) {
+                continue;
+            }
+
+            to_process.push(Reverse((
+                dist + find_distance(pads, last_press, dir.1, robot - 1, robots),
+                newpos,
+                dir.1,
+            )));
+        }
+    }
+
+    robots[robot].insert((source, target), best_so_far.unwrap());
+
+    best_so_far.unwrap()
+}
+
 fn find_distances(
     pad: &Vec<(char, Position)>,
     costs: &HashMap<(char, char), (i64, Vec<char>)>,
@@ -304,7 +368,82 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let d_pad = vec![
+        ('^', Position { x: 1, y: 0 }),
+        ('A', Position { x: 2, y: 0 }),
+        ('<', Position { x: 0, y: 1 }),
+        ('v', Position { x: 1, y: 1 }),
+        ('>', Position { x: 2, y: 1 }),
+    ];
+
+    let mut base_costs = HashMap::new();
+    for s in vec!['^', 'A', '<', 'v', '>'] {
+        for d in vec!['^', 'A', '<', 'v', '>'] {
+            base_costs.insert((s, d), 1);
+        }
+    }
+
+    // let robot_1_costs = find_distances(&d_pad, &base_costs);
+    // println!("Robot 1: {:?}", robot_1_costs);
+
+    // // So we need distances for a d_pad to d_pad distances.
+    // // This is for the first to second robot.
+    // // So for the second robot to go from < to ^ it will be more.
+
+    // let robot_2_costs = find_distances(&d_pad, &robot_1_costs);
+    // println!("Robot 2: {:?}", robot_2_costs);
+
+    // let mut robots = Vec::new();
+    // robots.push(base_costs);
+    // for i in 0..25 {
+    //     robots.push(find_distances(&d_pad, robots.last().unwrap()));
+    // }
+
+    let keypad = vec![
+        ('7', Position { x: 0, y: 0 }),
+        ('4', Position { x: 0, y: 1 }),
+        ('1', Position { x: 0, y: 2 }),
+        ('8', Position { x: 1, y: 0 }),
+        ('5', Position { x: 1, y: 1 }),
+        ('2', Position { x: 1, y: 2 }),
+        ('0', Position { x: 1, y: 3 }),
+        ('9', Position { x: 2, y: 0 }),
+        ('6', Position { x: 2, y: 1 }),
+        ('3', Position { x: 2, y: 2 }),
+        ('A', Position { x: 2, y: 3 }),
+    ];
+
+    let mut pads = Vec::new();
+    for _ in 0..26 {
+        pads.push(d_pad.clone());
+    }
+    pads.push(keypad);
+
+    let mut robots = Vec::new();
+    robots.push(base_costs);
+    for _ in 0..26 {
+        robots.push(HashMap::new());
+    }
+
+    // let final_robot_costs = find_distances(&keypad, &robots.last().unwrap());
+    // println!("Robot 3: {:?}", final_robot_costs);
+
+    input
+        .codes
+        .iter()
+        .map(|code| {
+            let distance = code.chars().fold((0, 'A'), |(total, last_button), dest| {
+                (
+                    total + find_distance(&pads, last_button, dest, 26, &mut robots),
+                    dest,
+                )
+            });
+            let number = code.trim_end_matches("A").parse::<i64>().unwrap();
+            // println!("{}: {} * {}", code, distance.0, number);
+            // println!("{:?}", distance.2);
+            distance.0 * number
+        })
+        .sum()
 }
 
 fn parse(file: &str) -> Input {
