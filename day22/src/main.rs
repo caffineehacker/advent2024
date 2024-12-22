@@ -1,6 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
 use std::{
+    collections::{HashMap, VecDeque},
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -59,7 +60,50 @@ fn part1(input: &Input) -> i64 {
 }
 
 fn part2(input: &Input) -> i64 {
-    0
+    let results = input
+        .values
+        .iter()
+        .map(|v| {
+            let mut current = *v;
+            let mut history = VecDeque::new();
+            history.push_back(current % 10);
+
+            let mut results = HashMap::new();
+
+            for _ in 0..2000 {
+                current = (current ^ (current * 64)) % 16777216;
+                current = (current ^ (current / 32)) % 16777216;
+                current = (current ^ (current * 2048)) % 16777216;
+
+                history.push_back(current % 10);
+                if history.len() > 4 {
+                    let mut price_changes = Vec::new();
+                    for i in 1..history.len() {
+                        price_changes.push(history[i] - history[0]);
+                    }
+
+                    let previous_result = results.get(&price_changes);
+                    if previous_result.is_none() {
+                        results.insert(price_changes, current % 10);
+                    }
+                    history.pop_front();
+                }
+            }
+
+            results
+        })
+        .collect_vec();
+
+    let mut totals = HashMap::new();
+    for r in results {
+        for k in r.keys() {
+            let total = totals.entry(k.clone()).or_default();
+            *total += *r.get(k).unwrap();
+        }
+    }
+
+    println!("{:?}", *totals.iter().max_by_key(|(_, v)| **v).unwrap().0);
+    *totals.iter().max_by_key(|(_, v)| **v).unwrap().1
 }
 
 fn parse(file: &str) -> Input {
@@ -92,9 +136,9 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
+        let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test2.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, 23);
     }
 }
