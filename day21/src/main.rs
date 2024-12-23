@@ -1,8 +1,7 @@
 use clap::Parser;
-use itertools::Itertools;
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BinaryHeap, HashMap},
     fs::File,
     hash::Hash,
     io::{BufRead, BufReader},
