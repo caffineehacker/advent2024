@@ -2,7 +2,7 @@ use clap::Parser;
 use itertools::Itertools;
 use multimap::MultiMap;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -82,8 +82,38 @@ fn part1(input: &Input) -> usize {
         .count()
 }
 
-fn part2(input: &Input) -> i64 {
-    0
+fn part2(input: &Input) -> String {
+    let mut best_group = vec![];
+    for k in input.computers.keys() {
+        let connected = input.computers.get_vec(k).unwrap();
+
+        println!("{} -> {:?}", k, connected);
+
+        let mut i = connected.len();
+        while i >= best_group.len() {
+            if let Some(combo) = connected.iter().combinations(i).find(|combos| {
+                println!("Testing {}, {:?}", k, combos);
+                combos.iter().all(|c| {
+                    let c_connected = input.computers.get_vec(*c).unwrap();
+                    combos
+                        .iter()
+                        .all(|c2| c_connected.contains(*c2) || **c == **c2)
+                })
+            }) {
+                let mut group = combo.clone();
+                group.push(k);
+                group.sort();
+                println!("New best: {:?}", group);
+                best_group = group;
+            }
+
+            i -= 1;
+        }
+    }
+
+    println!("{:?}", best_group);
+
+    best_group.into_iter().join(",")
 }
 
 fn parse(file: &str) -> Input {
@@ -125,6 +155,6 @@ mod tests {
         let input = parse(&(env!("CARGO_MANIFEST_DIR").to_owned() + "/src/test1.txt"));
         let result2 = part2(&input);
 
-        assert_eq!(result2, 0);
+        assert_eq!(result2, "co,de,ka,ta");
     }
 }
