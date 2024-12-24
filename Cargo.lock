@@ -504,6 +504,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "day24"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "indicatif",
+ "itertools",
+ "regex",
+]
+
+[[package]]
 name = "daytodo"
 version = "0.1.0"
 dependencies = [
