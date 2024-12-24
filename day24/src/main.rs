@@ -1,9 +1,7 @@
 use clap::Parser;
 use itertools::Itertools;
-use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::{
     collections::{HashMap, HashSet},
-    fmt::format,
     fs::File,
     io::{BufRead, BufReader},
     rc::Rc,
@@ -17,12 +15,6 @@ struct Args {
     #[arg(long)]
     debug: bool,
 }
-
-// #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-// struct Position {
-//     x: i64,
-//     y: i64,
-// }
 
 #[derive(Debug, Clone, Hash)]
 enum Gate {
@@ -285,7 +277,7 @@ fn part2_better(input: &Input) -> String {
         })
         .collect_vec();
 
-    let mut possible_wires: HashSet<String> = wrong_zs
+    let possible_wires: HashSet<String> = wrong_zs
         .iter()
         .flat_map(|z| find_targets(z))
         .chain(all_wires.difference(&used_wires).map(|w| w.clone()))
@@ -322,7 +314,7 @@ fn part2_better(input: &Input) -> String {
             if b == a {
                 continue;
             }
-            for c in 0..1 {
+            for _c in 0..1 {
                 let c = possible_ops
                     .iter()
                     .find_position(|o| o.target == "z19")
@@ -331,7 +323,7 @@ fn part2_better(input: &Input) -> String {
                 if c == b || c == a {
                     continue;
                 }
-                for d in 0..1 {
+                for _d in 0..1 {
                     let d = possible_ops
                         .iter()
                         .find_position(|o| o.target == "sbg")
@@ -340,7 +332,7 @@ fn part2_better(input: &Input) -> String {
                     if d == c || d == b || d == a {
                         continue;
                     }
-                    for e in 0..1 {
+                    for _e in 0..1 {
                         let e = possible_ops
                             .iter()
                             .find_position(|o| o.target == "z37")
@@ -349,7 +341,7 @@ fn part2_better(input: &Input) -> String {
                         if e == d || e == c || e == b || e == a {
                             continue;
                         }
-                        for f in 0..1 {
+                        for _f in 0..1 {
                             let f = possible_ops
                                 .iter()
                                 .find_position(|o| o.target == "dsd")
@@ -358,7 +350,7 @@ fn part2_better(input: &Input) -> String {
                             if f == e || f == d || f == c || f == b || f == a {
                                 continue;
                             }
-                            for g in 0..1 {
+                            for _g in 0..1 {
                                 let g = possible_ops
                                     .iter()
                                     .find_position(|o| o.target == "z12")
@@ -367,7 +359,7 @@ fn part2_better(input: &Input) -> String {
                                 if g == f || g == e || g == d || g == c || g == b || g == a {
                                     continue;
                                 }
-                                'h: for h in 0..1 {
+                                'h: for _h in 0..1 {
                                     let h = possible_ops
                                         .iter()
                                         .find_position(|o| o.target == "djg")
@@ -568,7 +560,7 @@ fn find_formula(
     return cache[wire].clone();
 }
 
-fn part2(input: &Input) -> String {
+fn _part2(input: &Input) -> String {
     let mut initial_x = 0;
     let mut initial_y = 0;
 

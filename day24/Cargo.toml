@@ -8,4 +8,3 @@ clap = { version = "*", features = ["derive"] }
 indicatif = "*"
 itertools = "*"
 regex = "*"
-rayon = "*"
