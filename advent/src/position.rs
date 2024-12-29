@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub};
 
-use num_traits::{CheckedAdd, CheckedSub, NumCast};
+use num_traits::{CheckedAdd, CheckedSub};
 
 #[allow(non_camel_case_types)]
 pub type Position_i64 = Position<i64>;
@@ -8,16 +8,44 @@ pub type Position_i64 = Position<i64>;
 #[allow(non_camel_case_types)]
 pub type Position_usize = Position<usize>;
 
+#[allow(non_camel_case_types)]
+pub type Position_isize = Position<isize>;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Position<T> {
     pub x: T,
     pub y: T,
 }
 
+impl<T> Position<T> {
+    pub fn try_from<F: TryInto<T>>(f: Position<F>) -> Result<Self, <F as TryInto<T>>::Error> {
+        Ok(Self {
+            x: f.x.try_into()?,
+            y: f.y.try_into()?,
+        })
+    }
+
+    pub fn from<F: Into<T>>(f: Position<F>) -> Self {
+        Self {
+            x: f.x.into(),
+            y: f.y.into(),
+        }
+    }
+}
+
+impl From<Position<usize>> for Position<isize> {
+    fn from(f: Position<usize>) -> Self {
+        Position {
+            x: f.x.try_into().unwrap(),
+            y: f.y.try_into().unwrap(),
+        }
+    }
+}
+
 impl<T: Add<Output = T>> Add for Position<T> {
     type Output = Position<T>;
 
-    fn add<R>(self, rhs: Position<R: NumCast>) -> Self::Output {
+    fn add(self, rhs: Self) -> Self::Output {
         Position {
             x: self.x + rhs.x,
             y: self.y + rhs.y,

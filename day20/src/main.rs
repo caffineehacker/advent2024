@@ -1,11 +1,10 @@
+use advent::parse::Parser as AventParser;
+use advent::position::Position;
 use clap::Parser;
 use itertools::Itertools;
 use std::{
     cmp::Reverse,
     collections::{BinaryHeap, HashMap, HashSet},
-    fs::File,
-    io::{BufRead, BufReader},
-    ops::Add,
 };
 
 #[derive(Parser, Debug)]
@@ -17,28 +16,11 @@ struct Args {
     debug: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct Position {
-    x: i64,
-    y: i64,
-}
-
-impl Add for Position {
-    type Output = Position;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Position {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 struct Input {
-    walls: HashSet<Position>,
-    start: Position,
-    exit: Position,
+    walls: HashSet<Position<isize>>,
+    start: Position<isize>,
+    exit: Position<isize>,
 }
 
 fn main() {
@@ -64,7 +46,7 @@ fn part1(input: &Input) -> usize {
     };
     // First find the best route, then we can start cheating
     // Map from a Position to the number of seconds it takes to get to the end. This is without cheating.
-    let mut shortest_path_to_end: HashMap<Position, i64> = HashMap::new();
+    let mut shortest_path_to_end = HashMap::new();
 
     let mut states = BinaryHeap::new();
     states.push(Reverse((0, input.exit)));
@@ -77,31 +59,35 @@ fn part1(input: &Input) -> usize {
         }
         shortest_path_to_end.insert(pos.clone(), time);
 
-        let new_pos = pos + Position { x: -1, y: 0 };
-        if pos.x > 0 && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.checked_sub_x(1) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 1, y: 0 };
-        if pos.x < max_bounds.x && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.limited_add_x(1, max_bounds) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 0, y: -1 };
-        if pos.y > 0 && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.checked_sub_y(1) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 0, y: 1 };
-        if pos.y < max_bounds.y && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.limited_add_y(1, max_bounds) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
     }
 
     let shortest_no_cheat_path = shortest_path_to_end.get(&input.start).unwrap();
     println!("Shortest path: {:?}", shortest_no_cheat_path);
 
-    let mut shortest_path_to_start: HashMap<Position, i64> = HashMap::new();
+    let mut shortest_path_to_start = HashMap::new();
 
     let mut states = BinaryHeap::new();
     states.push(Reverse((0, input.start)));
@@ -114,24 +100,28 @@ fn part1(input: &Input) -> usize {
         }
         shortest_path_to_start.insert(pos.clone(), time);
 
-        let new_pos = pos + Position { x: -1, y: 0 };
-        if pos.x > 0 && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.checked_sub_x(1) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 1, y: 0 };
-        if pos.x < max_bounds.x && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.limited_add_x(1, max_bounds) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 0, y: -1 };
-        if pos.y > 0 && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.checked_sub_y(1) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
 
-        let new_pos = pos + Position { x: 0, y: 1 };
-        if pos.y < max_bounds.y && !input.walls.contains(&new_pos) {
-            states.push(Reverse((time + 1, new_pos)));
+        if let Some(new_pos) = pos.limited_add_y(1, max_bounds) {
+            if !input.walls.contains(&new_pos) {
+                states.push(Reverse((time + 1, new_pos)));
+            }
         }
     }
 
@@ -222,7 +212,7 @@ fn part2(input: &Input) -> usize {
     };
     // First find the best route, then we can start cheating
     // Map from a Position to the number of seconds it takes to get to the end. This is without cheating.
-    let mut shortest_path_to_end: HashMap<Position, i64> = HashMap::new();
+    let mut shortest_path_to_end = HashMap::new();
 
     let mut states = BinaryHeap::new();
     states.push(Reverse((0, input.exit)));
@@ -235,7 +225,7 @@ fn part2(input: &Input) -> usize {
         }
         shortest_path_to_end.insert(pos.clone(), time);
 
-        let new_pos = pos + Position { x: -1, y: 0 };
+        let new_pos = pos - Position { x: 1, y: 0 };
         if pos.x > 0 && !input.walls.contains(&new_pos) {
             states.push(Reverse((time + 1, new_pos)));
         }
@@ -245,7 +235,7 @@ fn part2(input: &Input) -> usize {
             states.push(Reverse((time + 1, new_pos)));
         }
 
-        let new_pos = pos + Position { x: 0, y: -1 };
+        let new_pos = pos - Position { x: 0, y: 1 };
         if pos.y > 0 && !input.walls.contains(&new_pos) {
             states.push(Reverse((time + 1, new_pos)));
         }
@@ -259,7 +249,7 @@ fn part2(input: &Input) -> usize {
     let shortest_no_cheat_path = shortest_path_to_end.get(&input.start).unwrap();
     println!("Shortest path: {:?}", shortest_no_cheat_path);
 
-    let mut shortest_path_to_start: HashMap<Position, i64> = HashMap::new();
+    let mut shortest_path_to_start = HashMap::new();
 
     let mut states = BinaryHeap::new();
     states.push(Reverse((0, input.start)));
@@ -272,7 +262,7 @@ fn part2(input: &Input) -> usize {
         }
         shortest_path_to_start.insert(pos.clone(), time);
 
-        let new_pos = pos + Position { x: -1, y: 0 };
+        let new_pos = pos - Position { x: 1, y: 0 };
         if pos.x > 0 && !input.walls.contains(&new_pos) {
             states.push(Reverse((time + 1, new_pos)));
         }
@@ -282,7 +272,7 @@ fn part2(input: &Input) -> usize {
             states.push(Reverse((time + 1, new_pos)));
         }
 
-        let new_pos = pos + Position { x: 0, y: -1 };
+        let new_pos = pos - Position { x: 0, y: 1 };
         if pos.y > 0 && !input.walls.contains(&new_pos) {
             states.push(Reverse((time + 1, new_pos)));
         }
@@ -385,54 +375,13 @@ fn part2(input: &Input) -> usize {
 }
 
 fn parse(file: &str) -> Input {
-    let file = File::open(file).expect("Failed to open file");
-    let reader = BufReader::new(file);
-    let lines: Vec<String> = reader
-        .lines()
-        .map(|line| line.expect("Failed to read line"))
-        .collect();
+    let maze = AventParser::new(file).as_maze();
 
-    let walls: HashSet<Position> = lines
-        .iter()
-        .enumerate()
-        .flat_map(|(y, l)| {
-            l.chars()
-                .enumerate()
-                .filter(|(_, c)| *c == '#')
-                .map(move |(x, _)| Position {
-                    x: x as i64,
-                    y: y as i64,
-                })
-        })
-        .collect();
-    let start = lines
-        .iter()
-        .enumerate()
-        .flat_map(|(y, l)| {
-            l.chars()
-                .enumerate()
-                .filter(|(_, c)| *c == 'S')
-                .map(move |(x, _)| Position {
-                    x: x as i64,
-                    y: y as i64,
-                })
-        })
-        .collect_vec()[0];
-    let exit = lines
-        .iter()
-        .enumerate()
-        .flat_map(|(y, l)| {
-            l.chars()
-                .enumerate()
-                .filter(|(_, c)| *c == 'E')
-                .map(move |(x, _)| Position {
-                    x: x as i64,
-                    y: y as i64,
-                })
-        })
-        .collect_vec()[0];
-
-    Input { walls, start, exit }
+    Input {
+        start: maze.get_only_position('S').unwrap(),
+        exit: maze.get_only_position('E').unwrap(),
+        walls: maze.walls,
+    }
 }
 
 #[cfg(test)]
